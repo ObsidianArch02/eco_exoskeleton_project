@@ -9,6 +9,8 @@ import time
 import random
 from core.decision_system import CentralDecisionSystem
 from models import SensorData
+from core.log_manager import setup_logging
+setup_logging(log_file="logs/test_sensor.log", level=20)
 
 def generate_random_sensor_data() -> SensorData:
     """Generate random sensor data for testing."""

@@ -1,6 +1,10 @@
 import time
+import logging
 from typing import Dict, List, Optional
 from ..models import SensorData, ModuleStatus, Command, ModuleState
+from ..config import DECISION_INTERVAL
+
+logger = logging.getLogger(__name__)
 
 class CentralDecisionSystem:
     def __init__(self):
@@ -27,14 +31,14 @@ class CentralDecisionSystem:
     
     def make_decision(self) -> Optional[Command]:
         current_time = time.time()
-        if current_time - self.last_decision_time < 1.0:
+        if current_time - self.last_decision_time < DECISION_INTERVAL:
             return None
-            
+
         self.last_decision_time = current_time
-        
+
         if self.repair_plan:
             return self.repair_plan.pop(0)
-            
+
         return self._monitor_environment()
     
     def _generate_repair_plan(self):
@@ -57,13 +61,20 @@ class CentralDecisionSystem:
         ]
     
     def _handle_task_completion(self, module: str):
-        pass
+        logger.info(f"{module} 模块任务完成，继续执行后续计划")
     
     def _handle_module_error(self, module: str):
         error_status = self.module_states[module]
         if "超时" in error_status.message:
+            logger.warning(f"{module} 模块超时，尝试重试...")
             if module == "greenhouse":
                 return Command(module, "deploy", {})
+            elif module == "injection":
+                return Command(module, "inject", {"depth": 10, "pressure": 150})
+            elif module == "bubble":
+                return Command(module, "spray", {"duration": 3000, "intensity": 80})
+        logger.error(f"{module} 模块错误: {error_status.message}")
+        return None
     
     def _monitor_environment(self) -> Optional[Command]:
         if self.environment.temperature < 10 and self.module_states["greenhouse"].state == ModuleState.IDLE:

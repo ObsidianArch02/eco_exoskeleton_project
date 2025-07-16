@@ -1,8 +1,10 @@
+import os
+
 # MQTT 配置
 MQTT_BROKER = "192.168.1.100"
 MQTT_PORT = 1883
-MQTT_USER = "admin"
-MQTT_PASS = "password"
+MQTT_USER = os.getenv("MQTT_USER", "admin")
+MQTT_PASS = os.getenv("MQTT_PASS", "password")
 
 # 温室模块主题
 TOPIC_GREENHOUSE_SENSORS = "exoskeleton/greenhouse/sensors"

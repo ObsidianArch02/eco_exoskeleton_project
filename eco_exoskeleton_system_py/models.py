@@ -1,6 +1,6 @@
 import time
 from enum import Enum
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 class ModuleState(Enum):
@@ -19,7 +19,7 @@ class SensorData:
     soil_moisture: float = 0.0
     wind_speed: float = 0.0
     terrain_type: str = "unknown"
-    damage_areas: List[Tuple[float, float]] = None
+    damage_areas: List[Tuple[float, float]] = field(default_factory=list)
     injection_depth: float = 0.0
     bubble_flow: float = 0.0
 
@@ -29,7 +29,7 @@ class ModuleStatus:
     state: ModuleState
     message: str
     timestamp: float
-    data: dict = None
+    data: dict = field(default_factory=dict)
 
 @dataclass
 class Command:

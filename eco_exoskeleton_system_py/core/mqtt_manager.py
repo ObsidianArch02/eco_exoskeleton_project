@@ -1,7 +1,9 @@
 import json
+import logging
 import paho.mqtt.client as mqtt
 from ..models import SensorData, ModuleStatus, Command, ModuleState
 from ..config import *
+logger = logging.getLogger(__name__)
 
 class MQTTManager:
     def __init__(self, decision_system):
@@ -21,7 +23,7 @@ class MQTTManager:
             self.connected = True
             return True
         except Exception as e:
-            print(f"MQTT 连接失败: {e}")
+            logger.error("MQTT 连接失败", exc_info=e)
             return False
     
     def _on_connect(self, client, userdata, flags, rc):
@@ -36,7 +38,7 @@ class MQTTManager:
             ])
             self.connected = True
         else:
-            print(f"连接失败，错误码: {rc}")
+            logger.error(f"连接失败，错误码: {rc}")
     
     def _on_message(self, client, userdata, msg):
         try:
@@ -57,7 +59,7 @@ class MQTTManager:
                 self._process_bubble_status(data)
                 
         except Exception as e:
-            print(f"消息处理错误: {e}")
+            logger.error("消息处理错误", exc_info=e)
     
     def _process_greenhouse_sensors(self, data: dict):
         self.sensor_data.temperature = data.get("temperature", 25.0)
@@ -65,9 +67,12 @@ class MQTTManager:
         self.decision_system.update_sensor_data(self.sensor_data)
     
     def _process_greenhouse_status(self, data: dict):
+        state_value = data["state"]
+        if not isinstance(state_value, ModuleState):
+            state_value = ModuleState(state_value)
         status = ModuleStatus(
             module="greenhouse",
-            state=ModuleState(data["state"]),
+            state=state_value,
             message=data["message"],
             timestamp=data["timestamp"]
         )
@@ -79,9 +84,12 @@ class MQTTManager:
         self.decision_system.update_sensor_data(self.sensor_data)
     
     def _process_injection_status(self, data: dict):
+        state_value = data["state"]
+        if not isinstance(state_value, ModuleState):
+            state_value = ModuleState(state_value)
         status = ModuleStatus(
             module="injection",
-            state=ModuleState(data["state"]),
+            state=state_value,
             message=data["message"],
             timestamp=data["timestamp"],
             data={"depth": data.get("depth", 0), "pressure": data.get("pressure", 0)}
@@ -93,18 +101,21 @@ class MQTTManager:
         self.decision_system.update_sensor_data(self.sensor_data)
     
     def _process_bubble_status(self, data: dict):
+        state_value = data["state"]
+        if not isinstance(state_value, ModuleState):
+            state_value = ModuleState(state_value)
         status = ModuleStatus(
             module="bubble",
-            state=ModuleState(data["state"]),
+            state=state_value,
             message=data["message"],
             timestamp=data["timestamp"],
             data={"duration": data.get("duration", 0), "intensity": data.get("intensity", 0)}
         )
         self.decision_system.update_module_status(status)
     
-    def send_command(self, command: Command):
+    def send_command(self, command: Command) -> bool:
         if not self.connected:
-            return
+            return False
             
         topic = ""
         if command.module == "greenhouse":
@@ -114,7 +125,7 @@ class MQTTManager:
         elif command.module == "bubble":
             topic = TOPIC_BUBBLE_COMMAND
         else:
-            return
+            return False
             
         payload = json.dumps({
             "action": command.action,
@@ -122,6 +133,7 @@ class MQTTManager:
         })
         
         self.client.publish(topic, payload)
+        return True
 
     def disconnect(self):
         if self.connected:
