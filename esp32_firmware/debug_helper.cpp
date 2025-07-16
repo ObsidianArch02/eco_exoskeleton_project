@@ -2,7 +2,43 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <Preferences.h>
+
+Preferences debug_prefs;
+const char* PREFS_NAMESPACE = "debug_settings";
+const char* DEBUG_LEVEL_KEY = "debug_level";
+
 int DebugHelper::debugLevel = DEBUG_LEVEL;
+
+void DebugHelper::initialize() {
+    if (!initialized) {
+        Serial.begin(115200);
+        while (!Serial); // Wait for serial port to connect
+        
+        // Load saved debug level from NVS
+        debug_prefs.begin(PREFS_NAMESPACE, true); // Read-only
+        int saved_level = debug_prefs.getInt(DEBUG_LEVEL_KEY, DEBUG_LEVEL);
+        debug_prefs.end();
+        
+        if (saved_level != DEBUG_LEVEL) {
+            debugLevel = saved_level;
+        }
+        
+        info("调试系统已初始化. 级别: %d", debugLevel);
+        initialized = true;
+    }
+}
+
+void DebugHelper::setLevel(int level) {
+    debugLevel = level;
+    
+    // Save to non-volatile storage
+    debug_prefs.begin(PREFS_NAMESPACE, false); // Read-write
+    debug_prefs.putInt(DEBUG_LEVEL_KEY, level);
+    debug_prefs.end();
+    
+    info("调试级别已设置为: %d", level);
+}
 bool DebugHelper::initialized = false;
 
 void DebugHelper::initialize() {

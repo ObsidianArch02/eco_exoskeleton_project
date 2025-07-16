@@ -5,7 +5,14 @@
 
 #include "mqtt_helper.h"
 #include "debug_helper.h"
+#include "sensor_filter.h"
+#include "sensor_calibration.h"
 #include <ArduinoJson.h>
+
+// 传感器过滤器实例
+SensorFilter pressureFilter;
+SensorFilter flowFilter;
+SensorFilter tankLevelFilter;
 
 // ==================== 硬件配置 ====================
 #define NOZZLE_PIN         12    // 喷嘴控制引脚
@@ -80,6 +87,13 @@ void loop() {
 
 // ==================== MQTT 回调 ====================
 void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
+  // 处理内部重新订阅消息
+  if (strcmp(topic, "internal/resubscribe") == 0) {
+    DebugHelper::info("重新订阅主题: %s", TOPIC_COMMAND);
+    mqtt_helper_subscribe(TOPIC_COMMAND);
+    return;
+  }
+  
   // 解析 JSON 指令
   DynamicJsonDocument doc(256);
   deserializeJson(doc, payload, length);
@@ -95,10 +109,25 @@ void publishSensorData() {
   // 创建JSON对象
   DynamicJsonDocument doc(256);
   
-  // 读取传感器
-  doc["flow_rate"] = analogRead(FLOW_SENSOR_PIN);
-  doc["tank_level"] = analogRead(TANK_LEVEL_PIN);
-  doc["system_pressure"] = analogRead(PRESSURE_PIN);
+  // 读取原始传感器值
+  float rawPressure = analogRead(PRESSURE_PIN);
+  float rawFlow = analogRead(FLOW_SENSOR_PIN);
+  float rawTank = analogRead(TANK_LEVEL_PIN);
+  
+  // 滤波
+  pressureFilter.addValue(rawPressure);
+  flowFilter.addValue(rawFlow);
+  tankLevelFilter.addValue(rawTank);
+  
+  // 校准
+  float calibratedPressure = calibrate_pressure(pressureFilter.getFiltered());
+  float calibratedFlow = calibrate_flow(flowFilter.getFiltered());
+  float calibratedTank = calibrate_flow(tankLevelFilter.getFiltered());
+  
+  // 添加到JSON
+  doc["flow_rate"] = calibratedFlow;
+  doc["tank_level"] = calibratedTank;
+  doc["system_pressure"] = calibratedPressure;
   
   // 序列化并发布
   char buffer[256];

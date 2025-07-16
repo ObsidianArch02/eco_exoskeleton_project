@@ -67,21 +67,37 @@ bool mqtt_helper_connect_broker() {
 }
 
 void mqtt_helper_reconnect() {
+    static int reconnectAttempts = 0;
+    
     while (!mqttClient.connected()) {
-        DebugHelper::warning("MQTT connection lost. Reconnecting...");
+        DebugHelper::warning("MQTT connection lost. Reconnecting... (Attempt %d)", reconnectAttempts+1);
         
         // First ensure WiFi is connected
         if (WiFi.status() != WL_CONNECTED) {
             DebugHelper::info("WiFi disconnected, reconnecting...");
-            mqtt_helper_connect_wifi();
+            if (!mqtt_helper_connect_wifi()) {
+                DebugHelper::error("WiFi reconnection failed");
+            }
         }
         
         // Then connect to MQTT
         if (mqtt_helper_connect_broker()) {
             DebugHelper::info("Re-subscribing to topics");
+            // Notify modules to resubscribe
+            if (user_callback) {
+                user_callback("internal/resubscribe", nullptr, 0);
+            }
+            reconnectAttempts = 0;
         } else {
-            DebugHelper::info("Retrying in 5 seconds...");
+            reconnectAttempts++;
+            DebugHelper::warning("Retrying in 5 seconds...");
             delay(5000);
+            
+            // Reset after 5 attempts
+            if (reconnectAttempts >= 5) {
+                DebugHelper::error("Resetting after 5 failed attempts");
+                ESP.restart();
+            }
         }
     }
 }
