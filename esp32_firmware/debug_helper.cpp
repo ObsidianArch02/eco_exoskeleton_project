@@ -37,7 +37,7 @@ void DebugHelper::initialize() {
             nvs_close(nvs_handle);
         }
         
-        info("调试系统已初始化. 级别: %d", debugLevel);
+        info("Debug system initialized. Level: %d", debugLevel);
         initialized = true;
     }
 }
@@ -56,7 +56,7 @@ void DebugHelper::setLevel(int level) {
         nvs_close(nvs_handle);
     }
     
-    info("调试级别已设置为: %d", level);
+    info("Debug level set to: %d", level);
 }
 
 void DebugHelper::print(const char* level, const char* format, va_list args) {
