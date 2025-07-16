@@ -5,7 +5,7 @@ project(esp32_exoskeleton_firmware)
 # Set the target to esp32
 set(CMAKE_EXECUTABLE_SUFFIX ".elf")
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 23)  # Updated to C++23 as recommended by ESP-IDF
 
 # Add shared components
 add_library(shared_components STATIC
@@ -36,7 +36,7 @@ add_executable(injection_module
 
 target_link_libraries(injection_module shared_components)
 
-# ESP-IDF component requirements
+# ESP-IDF component requirements - Updated for native ESP-IDF APIs
 set(COMPONENT_REQUIRES 
     freertos
     esp_netif
@@ -54,12 +54,16 @@ set(COMPONENT_REQUIRES
     cJSON
     driver
     log
+    mqtt
+    esp_timer
+    esp_common
 )
 
 # Include ESP-IDF components
 target_link_libraries(bubble_machine_module ${COMPONENT_REQUIRES})
 target_link_libraries(greenhouse_module ${COMPONENT_REQUIRES})
 target_link_libraries(injection_module ${COMPONENT_REQUIRES})
+target_link_libraries(shared_components ${COMPONENT_REQUIRES})
 
 # Set compiler options
 target_compile_options(shared_components PRIVATE -Wno-unused-variable -Wno-unused-function)
