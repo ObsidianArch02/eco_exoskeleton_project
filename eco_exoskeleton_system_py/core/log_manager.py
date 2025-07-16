@@ -4,9 +4,9 @@ from typing import Optional, List
 
 def setup_logging(log_file: Optional[str] = None, level: int = logging.INFO):
     """
-    初始化日志系统，支持控制台和可选文件输出。
-    :param log_file: 日志文件路径，若为 None 则只输出到控制台。
-    :param level: 日志级别。
+    Initialize the logging system, supporting both console and optional file output.
+    :param log_file: Path to the log file. If None, output is only to the console.
+    :param level: Logging level.
     """
     log_format = '[%(asctime)s] %(levelname)s [%(name)s]: %(message)s'
     datefmt = '%Y-%m-%d %H:%M:%S'
