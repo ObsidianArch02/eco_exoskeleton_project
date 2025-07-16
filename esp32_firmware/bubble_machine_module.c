@@ -3,8 +3,8 @@
  * 负责修复液喷洒控制
  */
 
-#include <WiFi.h>
-#include <PubSubClient.h>
+#include "mqtt_helper.h"
+#include "debug_helper.h"
 #include <ArduinoJson.h>
 
 // ==================== 硬件配置 ====================
@@ -12,6 +12,11 @@
 #define FLOW_SENSOR_PIN    36    // 流量传感器 (ADC)
 #define TANK_LEVEL_PIN     39    // 储液罐液位传感器 (ADC)
 #define PRESSURE_PIN       14    // 系统压力传感器 (ADC)
+
+// PWM配置
+#define NOZZLE_PWM_CHANNEL 0
+#define PWM_FREQ 5000
+#define PWM_RESOLUTION 8
 
 // ==================== 网络配置 ====================
 const char* WIFI_SSID = "Your_WiFi_SSID";
@@ -24,16 +29,10 @@ const char* TOPIC_COMMAND = "exoskeleton/bubble/command";
 const char* TOPIC_STATUS = "exoskeleton/bubble/status";
 const char* TOPIC_SENSORS = "exoskeleton/bubble/sensors";
 
-// ==================== 全局对象 ====================
-WiFiClient espClient;
-PubSubClient mqttClient(espClient);
-
 // ==================== 函数声明 ====================
 void setup();
 void loop();
-void connectToWiFi();
-void mqttCallback(char* topic, byte* payload, unsigned int length);
-void reconnectMQTT();
+void mqttCallback(char* topic, uint8_t* payload, unsigned int length);
 void publishSensorData();
 void processCommand(JsonDocument& command);
 void sprayBubbles(int duration, int intensity);
@@ -41,34 +40,34 @@ void sendStatus(const char* state, const char* message);
 
 // ==================== 主程序 ====================
 void setup() {
-  Serial.begin(115200);
+  DebugHelper::initialize();
   
   // 初始化引脚
-  pinMode(NOZZLE_PIN, OUTPUT);
   pinMode(FLOW_SENSOR_PIN, INPUT);
   pinMode(TANK_LEVEL_PIN, INPUT);
   pinMode(PRESSURE_PIN, INPUT);
   
-  // 初始状态
-  digitalWrite(NOZZLE_PIN, LOW);
+  // 配置喷嘴PWM
+  ledcSetup(NOZZLE_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+  ledcAttachPin(NOZZLE_PIN, NOZZLE_PWM_CHANNEL);
+  ledcWrite(NOZZLE_PWM_CHANNEL, 0);  // 初始关闭
   
-  // 连接网络
-  connectToWiFi();
+  // 初始化MQTT助手
+  mqtt_helper_init(WIFI_SSID, WIFI_PASS, MQTT_BROKER, MQTT_PORT, 
+                  "BubbleMachineClient", mqttCallback);
   
-  // 设置 MQTT
-  mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
-  mqttClient.setCallback(mqttCallback);
+  // 连接WiFi和MQTT
+  if (mqtt_helper_connect_wifi() && mqtt_helper_connect_broker()) {
+    mqtt_helper_subscribe(TOPIC_COMMAND);
+  }
   
-  Serial.println("泡泡机模块初始化完成");
+  DebugHelper::info("泡泡机模块初始化完成");
   sendStatus("IDLE", "系统启动");
 }
 
 void loop() {
-  // 维护 MQTT 连接
-  if (!mqttClient.connected()) {
-    reconnectMQTT();
-  }
-  mqttClient.loop();
+  // 处理MQTT消息
+  mqtt_helper_loop();
   
   static unsigned long lastUpdate = 0;
   if (millis() - lastUpdate > 1000) { // 每秒更新传感器数据
@@ -79,11 +78,8 @@ void loop() {
   delay(10);
 }
 
-// ==================== 网络连接 ====================
-// 与温室模块相同，省略重复代码...
-
 // ==================== MQTT 回调 ====================
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
+void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
   // 解析 JSON 指令
   DynamicJsonDocument doc(256);
   deserializeJson(doc, payload, length);
@@ -107,7 +103,7 @@ void publishSensorData() {
   // 序列化并发布
   char buffer[256];
   serializeJson(doc, buffer);
-  mqttClient.publish(TOPIC_SENSORS, buffer);
+  mqtt_helper_publish(TOPIC_SENSORS, buffer);
 }
 
 // ==================== 命令处理 ====================
@@ -123,10 +119,12 @@ void processCommand(JsonDocument& command) {
 
 // ==================== 泡泡喷洒控制 ====================
 void sprayBubbles(int duration, int intensity) {
+  DebugHelper::info("喷洒修复液, 持续时间: %dms, 强度: %d%%", duration, intensity);
   sendStatus("SPRAYING", "喷洒修复液...");
   
   // 根据强度调整喷嘴 (PWM控制)
-  analogWrite(NOZZLE_PIN, map(intensity, 0, 100, 50, 255));
+  int pwmValue = map(intensity, 0, 100, 50, 255);
+  ledcWrite(NOZZLE_PWM_CHANNEL, pwmValue);
   
   // 记录开始时间
   unsigned long startTime = millis();
@@ -136,6 +134,7 @@ void sprayBubbles(int duration, int intensity) {
     // 检查压力是否正常
     int pressure = analogRead(PRESSURE_PIN);
     if (pressure < 100) { // 压力过低阈值
+      DebugHelper::error("系统压力不足: %d", pressure);
       sendStatus("ERROR", "系统压力不足");
       break;
     }
@@ -144,7 +143,8 @@ void sprayBubbles(int duration, int intensity) {
   }
   
   // 关闭喷嘴
-  analogWrite(NOZZLE_PIN, 0);
+  ledcWrite(NOZZLE_PWM_CHANNEL, 0);
+  DebugHelper::info("喷洒完成");
   sendStatus("COMPLETED", "喷洒完成");
 }
 
@@ -158,7 +158,7 @@ void sendStatus(const char* state, const char* message) {
   
   char buffer[256];
   serializeJson(doc, buffer);
-  mqttClient.publish(TOPIC_STATUS, buffer);
+  mqtt_helper_publish(TOPIC_STATUS, buffer);
   
-  Serial.printf("状态报告: %s - %s\n", state, message);
+  DebugHelper::info("状态报告: %s - %s", state, message);
 }

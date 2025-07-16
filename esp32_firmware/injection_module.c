@@ -3,8 +3,7 @@
  * 负责土壤注射操作
  */
 
-#include <WiFi.h>
-#include <PubSubClient.h>
+#include "mqtt_helper.h"
 #include <ArduinoJson.h>
 
 // ==================== 硬件配置 ====================
@@ -12,6 +11,11 @@
 #define DEPTH_SENSOR_PIN   36    // 注射深度传感器 (ADC)
 #define PRESSURE_PIN       39    // 注射压力传感器 (ADC)
 #define NEEDLE_FEEDBACK_PIN 14   // 针头位置反馈
+
+// PWM配置
+#define MOTOR_PWM_CHANNEL 0
+#define PWM_FREQ 5000
+#define PWM_RESOLUTION 8
 
 // ==================== 网络配置 ====================
 const char* WIFI_SSID = "Your_WiFi_SSID";
@@ -24,16 +28,10 @@ const char* TOPIC_COMMAND = "exoskeleton/injection/command";
 const char* TOPIC_STATUS = "exoskeleton/injection/status";
 const char* TOPIC_SENSORS = "exoskeleton/injection/sensors";
 
-// ==================== 全局对象 ====================
-WiFiClient espClient;
-PubSubClient mqttClient(espClient);
-
 // ==================== 函数声明 ====================
 void setup();
 void loop();
-void connectToWiFi();
-void mqttCallback(char* topic, byte* payload, unsigned int length);
-void reconnectMQTT();
+void mqttCallback(char* topic, uint8_t* payload, unsigned int length);
 void publishSensorData();
 void processCommand(JsonDocument& command);
 void injectSoil(int depth, int pressure);
@@ -44,31 +42,31 @@ void setup() {
   Serial.begin(115200);
   
   // 初始化引脚
-  pinMode(MOTOR_PIN, OUTPUT);
   pinMode(DEPTH_SENSOR_PIN, INPUT);
   pinMode(PRESSURE_PIN, INPUT);
   pinMode(NEEDLE_FEEDBACK_PIN, INPUT_PULLUP);
   
-  // 初始状态
-  analogWrite(MOTOR_PIN, 0);
+  // 配置电机PWM
+  ledcSetup(MOTOR_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+  ledcAttachPin(MOTOR_PIN, MOTOR_PWM_CHANNEL);
+  ledcWrite(MOTOR_PWM_CHANNEL, 0);  // 初始关闭
   
-  // 连接网络
-  connectToWiFi();
+  // 初始化MQTT助手
+  mqtt_helper_init(WIFI_SSID, WIFI_PASS, MQTT_BROKER, MQTT_PORT, 
+                  "InjectionClient", mqttCallback);
   
-  // 设置 MQTT
-  mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
-  mqttClient.setCallback(mqttCallback);
+  // 连接WiFi和MQTT
+  if (mqtt_helper_connect_wifi() && mqtt_helper_connect_broker()) {
+    mqtt_helper_subscribe(TOPIC_COMMAND);
+  }
   
   Serial.println("注射模块初始化完成");
   sendStatus("IDLE", "系统启动");
 }
 
 void loop() {
-  // 维护 MQTT 连接
-  if (!mqttClient.connected()) {
-    reconnectMQTT();
-  }
-  mqttClient.loop();
+  // 处理MQTT消息
+  mqtt_helper_loop();
   
   static unsigned long lastUpdate = 0;
   if (millis() - lastUpdate > 200) { // 5Hz 更新传感器数据
@@ -83,7 +81,7 @@ void loop() {
 // 与温室模块相同，省略重复代码...
 
 // ==================== MQTT 回调 ====================
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
+void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
   // 解析 JSON 指令
   DynamicJsonDocument doc(256);
   deserializeJson(doc, payload, length);
@@ -107,7 +105,7 @@ void publishSensorData() {
   // 序列化并发布
   char buffer[256];
   serializeJson(doc, buffer);
-  mqttClient.publish(TOPIC_SENSORS, buffer);
+  mqtt_helper_publish(TOPIC_SENSORS, buffer);
 }
 
 // ==================== 命令处理 ====================
@@ -130,7 +128,7 @@ void injectSoil(int targetDepth, int targetPressure) {
   
   // 激活电机 (PWM控制)
   int motorPower = map(targetPressure, 0, 300, 150, 255);
-  analogWrite(MOTOR_PIN, motorPower);
+  ledcWrite(MOTOR_PWM_CHANNEL, motorPower);
   
   // 监控注射深度
   unsigned long startTime = millis();
@@ -152,7 +150,7 @@ void injectSoil(int targetDepth, int targetPressure) {
   }
   
   // 停止电机
-  analogWrite(MOTOR_PIN, 0);
+  ledcWrite(MOTOR_PWM_CHANNEL, 0);
   sendStatus("COMPLETED", "注射完成");
 }
 
@@ -166,7 +164,7 @@ void sendStatus(const char* state, const char* message) {
   
   char buffer[256];
   serializeJson(doc, buffer);
-  mqttClient.publish(TOPIC_STATUS, buffer);
+  mqtt_helper_publish(TOPIC_STATUS, buffer);
   
   Serial.printf("状态报告: %s - %s\n", state, message);
 }

@@ -103,43 +103,18 @@ Each module implements a dedicated functionality and communicates via MQTT proto
    - MQTT broker accessible to all modules
    - Unique client IDs for each module
 
-## Usage Examples
+## Troubleshooting
+**Flashing issues:**
+- Check serial port permissions
+- Reset ESP32 into bootloader mode
+- Verify USB cable supports data transfer
 
-### Greenhouse Control
-```c
-// Example command to deploy greenhouse
-{
-  "action": "deploy"
-}
-```
+**WiFi/MQTT connection problems:**
+- Enable DEBUG_LEVEL_VERBOSE in mqtt_helper.cpp
+- Verify WiFi credentials
+- Check MQTT broker availability
 
-### Injection Control
-```c
-// Example command for soil injection
-{
-  "action": "inject",
-  "params": {
-    "depth": 15,
-    "pressure": 200
-  }
-}
-```
-
-### Bubble Machine Control
-```c
-// Example command for spraying
-{
-  "action": "spray",
-  "params": {
-    "duration": 3000,
-    "intensity": 80
-  }
-}
-```
-
-## Error Handling
-Each module implements:
-- Operation timeouts
-- Hardware failure detection
-- Emergency stop mechanisms
-- Detailed error reporting via MQTT
+**Sensor inaccuracies:**
+- Verify reference voltages
+- Check wiring connections
+- Implement calibration curves

@@ -3,8 +3,7 @@
  * 负责可发射折叠温室的部署与收回
  */
 
-#include <WiFi.h>
-#include <PubSubClient.h>
+#include "mqtt_helper.h"
 #include <ArduinoJson.h>
 
 // ==================== 硬件配置 ====================
@@ -26,16 +25,10 @@ const char* TOPIC_COMMAND = "exoskeleton/greenhouse/command";
 const char* TOPIC_STATUS = "exoskeleton/greenhouse/status";
 const char* TOPIC_SENSORS = "exoskeleton/greenhouse/sensors";
 
-// ==================== 全局对象 ====================
-WiFiClient espClient;
-PubSubClient mqttClient(espClient);
-
 // ==================== 函数声明 ====================
 void setup();
 void loop();
-void connectToWiFi();
-void mqttCallback(char* topic, byte* payload, unsigned int length);
-void reconnectMQTT();
+void mqttCallback(char* topic, uint8_t* payload, unsigned int length);
 void publishSensorData();
 void processCommand(JsonDocument& command);
 void deployGreenhouse();
@@ -56,23 +49,22 @@ void setup() {
   digitalWrite(DEPLOY_PIN, LOW);
   digitalWrite(RETRACT_PIN, LOW);
   
-  // 连接网络
-  connectToWiFi();
+  // 初始化MQTT助手
+  mqtt_helper_init(WIFI_SSID, WIFI_PASS, MQTT_BROKER, MQTT_PORT, 
+                  "ESP32_Greenhouse", mqttCallback);
   
-  // 设置 MQTT
-  mqttClient.setServer(MQTT_BROKER, MQTT_PORT);
-  mqttClient.setCallback(mqttCallback);
+  // 连接WiFi和MQTT
+  if (mqtt_helper_connect_wifi() && mqtt_helper_connect_broker()) {
+    mqtt_helper_subscribe(TOPIC_COMMAND);
+  }
   
   Serial.println("温室模块初始化完成");
   sendStatus("IDLE", "系统启动");
 }
 
 void loop() {
-  // 维护 MQTT 连接
-  if (!mqttClient.connected()) {
-    reconnectMQTT();
-  }
-  mqttClient.loop();
+  // 处理MQTT消息
+  mqtt_helper_loop();
   
   static unsigned long lastUpdate = 0;
   if (millis() - lastUpdate > 1000) { // 每秒更新传感器数据
@@ -83,39 +75,10 @@ void loop() {
   delay(10);
 }
 
-// ==================== 网络连接 ====================
-void connectToWiFi() {
-  Serial.printf("连接WiFi: %s", WIFI_SSID);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  
-  Serial.println("\nWiFi连接成功!");
-  Serial.print("IP地址: ");
-  Serial.println(WiFi.localIP());
-}
 
-void reconnectMQTT() {
-  while (!mqttClient.connected()) {
-    Serial.print("连接MQTT代理...");
-    
-    if (mqttClient.connect("ESP32_Greenhouse")) {
-      Serial.println("MQTT连接成功!");
-      mqttClient.subscribe(TOPIC_COMMAND);
-    } else {
-      Serial.print("失败, 错误码: ");
-      Serial.print(mqttClient.state());
-      Serial.println(" 5秒后重试...");
-      delay(5000);
-    }
-  }
-}
 
 // ==================== MQTT 回调 ====================
-void mqttCallback(char* topic, byte* payload, unsigned int length) {
+void mqttCallback(char* topic, uint8_t* payload, unsigned int length) {
   Serial.printf("收到消息 [%s]: ", topic);
   
   // 解析 JSON 指令
@@ -142,7 +105,7 @@ void publishSensorData() {
   // 序列化并发布
   char buffer[256];
   serializeJson(doc, buffer);
-  mqttClient.publish(TOPIC_SENSORS, buffer);
+  mqtt_helper_publish(TOPIC_SENSORS, buffer);
   
   Serial.println("温室传感器数据已发布");
 }
@@ -214,7 +177,7 @@ void sendStatus(const char* state, const char* message) {
   
   char buffer[256];
   serializeJson(doc, buffer);
-  mqttClient.publish(TOPIC_STATUS, buffer);
+  mqtt_helper_publish(TOPIC_STATUS, buffer);
   
   Serial.printf("状态报告: %s - %s\n", state, message);
 }
