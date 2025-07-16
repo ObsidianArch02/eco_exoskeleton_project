@@ -7,6 +7,7 @@ for testing purposes. Run this script standalone to simulate sensor input.
 
 import time
 import random
+from dataclasses import fields
 from core.decision_system import CentralDecisionSystem
 from models import SensorData
 from core.log_manager import setup_logging
@@ -33,8 +34,8 @@ if __name__ == "__main__":
             sensor_data = generate_random_sensor_data()
             decision_system.update_sensor_data(sensor_data)
             print("Generated sensor data:")
-            for field in sensor_data.__dataclass_fields__:
-                print(f"  {field}: {getattr(sensor_data, field)}")
+            for field in fields(sensor_data):
+                print(f"  {field.name}: {getattr(sensor_data, field.name)}")
             time.sleep(1)
     except KeyboardInterrupt:
         print("\nTest sensor generator stopped.")
