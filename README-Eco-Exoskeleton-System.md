@@ -27,11 +27,12 @@ eco_exoskeleton_system/
 ├── config.py               # Configuration parameters
 ├── models.py               # Data models and structures
 ├── cli.py                  # Command-line interface
-├── core/                   # Core system components
-│   ├── __init__.py         # Package initialization
-│   ├── decision_system.py  # Central decision logic
-│   ├── mqtt_manager.py     # MQTT communication handler
-│   └── system_controller.py# Main system controller
+├── decision_system.py      # Central decision logic
+├── mqtt_manager.py         # MQTT communication handler
+├── system_controller.py    # Main system controller
+├── log_manager.py          # Logging management
+├── test_sensor_generator.py# Test sensor data generator
+└── esp32_firmware/         # ESP32 firmware modules
 ```
 
 ## File Descriptions
@@ -49,7 +50,7 @@ Defines data structures and enums used throughout the system:
 - `ModuleStatus`: Representation of module operational status
 - `Command`: Data structure for system commands
 
-### 3. core/decision_system.py
+### 3. decision_system.py
 Implements the central decision-making logic:
 - Environmental data processing and analysis
 - Repair plan generation
@@ -57,7 +58,7 @@ Implements the central decision-making logic:
 - Error handling and recovery strategies
 - Autonomous environmental monitoring
 
-### 4. core/mqtt_manager.py
+### 4. mqtt_manager.py
 Handles all MQTT communication:
 - Connection management to MQTT broker
 - Message processing from ESP32 modules
@@ -65,7 +66,7 @@ Handles all MQTT communication:
 - Sensor data ingestion and parsing
 - Status update handling
 
-### 5. core/system_controller.py
+### 5. system_controller.py
 Main system controller:
 - System lifecycle management (startup/shutdown)
 - Control thread implementation

@@ -8,10 +8,9 @@ for testing purposes. Run this script standalone to simulate sensor input.
 import time
 import random
 from dataclasses import fields
-from core.decision_system import CentralDecisionSystem
+from decision_system import CentralDecisionSystem
 from models import SensorData
-from core.log_manager import setup_logging
-setup_logging(log_file="logs/test_sensor.log", level=20)
+from log_manager import setup_logging
 
 def generate_random_sensor_data() -> SensorData:
     """Generate random sensor data for testing."""
@@ -27,6 +26,7 @@ def generate_random_sensor_data() -> SensorData:
     )
 
 if __name__ == "__main__":
+    setup_logging(log_file="logs/test_sensor.log", level=20)
     decision_system = CentralDecisionSystem()
     print("Test sensor generator started. Press Ctrl+C to stop.")
     try:

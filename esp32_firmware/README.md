@@ -60,11 +60,11 @@ Each module implements a dedicated functionality and communicates via MQTT proto
 ## Communication Protocol
 
 ### MQTT Topics Architecture
-| Module       | Command Topic                | Status Topic                 | Sensor Topic               |
-|--------------|------------------------------|------------------------------|----------------------------|
-| Greenhouse   | exoskeleton/greenhouse/cmd   | exoskeleton/greenhouse/stat  | exoskeleton/greenhouse/sen |
-| Injection    | exoskeleton/injection/cmd    | exoskeleton/injection/stat   | exoskeleton/injection/sen  |
-| Bubble       | exoskeleton/bubble/cmd       | exoskeleton/bubble/stat      | exoskeleton/bubble/sen     |
+| Module       | Command Topic                      | Status Topic                     | Sensor Topic                     |
+|--------------|------------------------------------|---------------------------------|----------------------------------|
+| Greenhouse   | exoskeleton/greenhouse/command     | exoskeleton/greenhouse/status   | exoskeleton/greenhouse/sensors   |
+| Injection    | exoskeleton/injection/command      | exoskeleton/injection/status    | exoskeleton/injection/sensors    |
+| Bubble       | exoskeleton/bubble/command         | exoskeleton/bubble/status       | exoskeleton/bubble/sensors       |
 
 ### Command Format
 ```json

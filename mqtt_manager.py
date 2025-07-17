@@ -1,8 +1,9 @@
 import json
 import logging
 import paho.mqtt.client as mqtt
-from ..models import SensorData, ModuleStatus, Command, ModuleState
-from ..config import *
+from models import SensorData, ModuleStatus, Command, ModuleState
+from config import *
+
 logger = logging.getLogger(__name__)
 
 class MQTTManager:

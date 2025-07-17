@@ -108,16 +108,16 @@ graph LR
 
 ## System Components
 
-### 1. Central Control System (`eco_exoskeleton_system_py/`)
+### 1. Central Control System (根目录)
 
 #### Core Modules
 
 | Module | File | Purpose |
 |--------|------|---------|
-| **System Controller** | `core/system_controller.py` | Main system orchestration and lifecycle management |
-| **Decision System** | `core/decision_system.py` | AI-driven environmental analysis and repair planning |
-| **MQTT Manager** | `core/mqtt_manager.py` | Communication hub for all ESP32 modules |
-| **Log Manager** | `core/log_manager.py` | Centralized logging and monitoring system |
+| **System Controller** | `system_controller.py` | Main system orchestration and lifecycle management |
+| **Decision System** | `decision_system.py` | AI-driven environmental analysis and repair planning |
+| **MQTT Manager** | `mqtt_manager.py` | Communication hub for all ESP32 modules |
+| **Log Manager** | `log_manager.py` | Centralized logging and monitoring system |
 
 #### Supporting Components
 
@@ -219,8 +219,8 @@ cd eco-exoskeleton-system
 # Install dependencies using uv (recommended)
 uv sync
 
-# Or using pip
-pip install -r requirements.txt
+# Or using pip with pyproject.toml
+pip install -e .
 ```
 
 ### ESP32 Firmware Setup
@@ -265,10 +265,10 @@ idf.py -B build/bubble_machine_module -p /dev/ttyUSB2 flash
 
 ```bash
 # Start with real hardware
-python eco_exoskeleton_system_py/main.py
+python main.py
 
 # Start with simulated sensors
-python eco_exoskeleton_system_py/main.py --test
+python main.py --test
 ```
 
 ### CLI Commands
@@ -285,7 +285,7 @@ python eco_exoskeleton_system_py/main.py --test
 
 ```bash
 # Run sensor data simulator
-python eco_exoskeleton_system_py/test_sensor_generator.py
+python test_sensor_generator.py
 ```
 
 ## MQTT Communication Protocol
@@ -405,3 +405,33 @@ idf.py -p /dev/ttyUSB0 monitor
 ---
 
 **Note**: This system is designed for research and development purposes. Ensure proper safety measures when deploying in real-world environments.
+
+
+## 📁 当前项目结构
+
+```
+eco-exoskeleton-system/
+├── 📄 main.py                    # 系统入口点
+├── 📄 system_controller.py       # 系统控制器
+├── 📄 decision_system.py         # 决策系统
+├── 📄 mqtt_manager.py            # MQTT通信管理
+├── 📄 cli.py                     # 命令行接口
+├── 📄 models.py                  # 数据模型
+├── 📄 config.py                  # 配置文件
+├── 📄 log_manager.py             # 日志管理器
+├── 📄 test_sensor_generator.py   # 测试传感器数据生成器
+├── 📄 pyproject.toml             # 项目配置
+├── 📄 README.md                  # 项目说明文档
+├── 📄 README-Eco-Exoskeleton-System.md  # 系统架构文档
+├── 📁 esp32_firmware/            # ESP32固件模块
+│   ├── 📄 CMakeLists.txt
+│   ├── 📄 build.sh
+│   ├── 📄 mqtt_helper.cpp/h
+│   ├── 📄 debug_helper.cpp/h
+│   ├── 📄 greenhouse_module.c
+│   ├── 📄 injection_module.c
+│   ├── 📄 bubble_machine_module.c
+│   └── 📄 sensor_*.h
+├── 📁 img/                       # 文档图片
+└── 📁 logs/                      # 日志文件目录
+```

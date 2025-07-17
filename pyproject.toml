@@ -1,9 +1,16 @@
 [project]
-name = "exoskeleton-system"
+name = "eco-exoskeleton-system"
 version = "0.1.0"
-description = "Add your description here"
+description = "生态修复外骨骼系统 - 用于环境修复的智能机器人平台"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "paho-mqtt>=2.1.0",
 ]
+
+[project.scripts]
+exoskeleton-system = "main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

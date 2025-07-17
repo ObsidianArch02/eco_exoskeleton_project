@@ -1,8 +1,8 @@
 import time
 import logging
 from typing import Dict, List, Optional
-from ..models import SensorData, ModuleStatus, Command, ModuleState
-from ..config import DECISION_INTERVAL
+from models import SensorData, ModuleStatus, Command, ModuleState
+from config import DECISION_INTERVAL
 
 logger = logging.getLogger(__name__)
 
