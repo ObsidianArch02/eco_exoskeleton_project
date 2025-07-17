@@ -56,6 +56,15 @@ class SystemCLI:
                 elif cmd == "help":
                     self._show_help()
                 
+                elif cmd == "database":
+                    self._show_database_info()
+                
+                elif cmd == "db_stats":
+                    self._show_database_stats()
+                
+                elif cmd == "db_cleanup":
+                    self._handle_database_cleanup()
+                
                 else:
                     print("❓ 未知命令，输入 'help' 查看帮助")
                     
@@ -244,5 +253,138 @@ class SystemCLI:
         print("  sensor_data    - 显示传感器数据")
         print("  processed_data - 显示处理后的数据")
         print("  pipelines      - 显示数据处理管道")
+        print()
+        print("数据库命令:")
+        print("  database       - 显示数据库信息")
+        print("  db_stats       - 显示数据库统计")
+        print("  db_cleanup     - 清理数据库")
         print("  help           - 显示此帮助信息")
+        print("=" * 60)
+
+    def _show_database_info(self):
+        """显示数据库信息"""
+        print("\n" + "=" * 60)
+        print("💾 数据库信息")
+        print("=" * 60)
+        
+        try:
+            from database_manager import get_database_manager
+            db_manager = get_database_manager()
+            info = db_manager.get_database_info()
+            
+            print(f"数据库路径: {info.get('database_path', 'N/A')}")
+            print(f"文件大小: {info.get('file_size_mb', 0):.2f} MB")
+            print()
+            
+            print("表记录数:")
+            print(f"  传感器数据: {info.get('sensor_data_count', 0):,}")
+            print(f"  算法结果: {info.get('algorithm_results_count', 0):,}")
+            print(f"  系统状态: {info.get('system_status_count', 0):,}")
+            print()
+            
+            if 'data_time_range' in info:
+                time_range = info['data_time_range']
+                print(f"数据时间范围:")
+                print(f"  开始时间: {time_range['start']}")
+                print(f"  结束时间: {time_range['end']}")
+            
+        except Exception as e:
+            print(f"❌ 获取数据库信息失败: {e}")
+        
+        print("=" * 60)
+    
+    def _show_database_stats(self):
+        """显示数据库统计"""
+        print("\n" + "=" * 60)
+        print("📈 数据库统计信息 (最近24小时)")
+        print("=" * 60)
+        
+        try:
+            from database_manager import get_database_manager
+            db_manager = get_database_manager()
+            stats = db_manager.get_statistics(24)
+            
+            # 显示传感器数据统计
+            if 'sensor_data' in stats:
+                print("📊 传感器数据统计:")
+                for module, module_stats in stats['sensor_data'].items():
+                    print(f"  {module} 模块:")
+                    for data_type, type_stats in module_stats.items():
+                        if data_type != 'raw':
+                            avg_val = type_stats.get('avg', 'N/A')
+                            min_val = type_stats.get('min', 'N/A')
+                            max_val = type_stats.get('max', 'N/A')
+                            count = type_stats.get('count', 0)
+                            print(f"    {data_type}: {count} 条记录")
+                            if avg_val != 'N/A':
+                                print(f"      平均值: {avg_val}, 范围: [{min_val}, {max_val}]")
+                print()
+            
+            # 显示算法结果统计
+            if 'algorithm_results' in stats:
+                print("🧠 算法处理统计:")
+                for algo_name, algo_stats in stats['algorithm_results'].items():
+                    count = algo_stats.get('count', 0)
+                    confidence = algo_stats.get('avg_confidence', 'N/A')
+                    print(f"  {algo_name}: {count} 次处理")
+                    if confidence != 'N/A':
+                        print(f"    平均置信度: {confidence}")
+                print()
+            
+            # 显示总体统计
+            if 'summary' in stats:
+                summary = stats['summary']
+                print("📝 总体统计:")
+                print(f"  传感器记录数: {summary.get('total_sensor_records', 0):,}")
+                print(f"  算法记录数: {summary.get('total_algorithm_records', 0):,}")
+                print(f"  统计时间段: {summary.get('hours_back', 0)} 小时")
+            
+        except Exception as e:
+            print(f"❌ 获取数据库统计失败: {e}")
+        
+        print("=" * 60)
+    
+    def _handle_database_cleanup(self):
+        """处理数据库清理"""
+        print("\n" + "=" * 60)
+        print("🧹 数据库清理")
+        print("=" * 60)
+        
+        try:
+            days_input = input("请输入要保留的天数 (默认30天): ").strip()
+            days_to_keep = 30
+            
+            if days_input:
+                try:
+                    days_to_keep = int(days_input)
+                    if days_to_keep <= 0:
+                        print("❌ 天数必须大于0")
+                        return
+                except ValueError:
+                    print("❌ 请输入有效的数字")
+                    return
+            
+            confirm = input(f"确认删除 {days_to_keep} 天前的数据? (y/N): ").strip().lower()
+            if confirm != 'y':
+                print("❌ 清理操作已取消")
+                return
+            
+            from database_manager import get_database_manager
+            db_manager = get_database_manager()
+            
+            print("🔄 正在清理数据库...")
+            result = db_manager.cleanup_old_data(days_to_keep)
+            
+            if result:
+                print("✅ 数据库清理完成:")
+                print(f"  删除传感器数据: {result.get('sensor_data_deleted', 0):,} 条")
+                print(f"  删除算法结果: {result.get('algorithm_results_deleted', 0):,} 条")
+                print(f"  删除系统状态: {result.get('system_status_deleted', 0):,} 条")
+                print(f"  保留天数: {result.get('days_kept', 0)} 天")
+            else:
+                print("❌ 数据库清理失败")
+        
+        except Exception as e:
+            print(f"❌ 数据库清理出错: {e}")
+        
         print("=" * 60)

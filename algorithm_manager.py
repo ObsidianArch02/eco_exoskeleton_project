@@ -12,6 +12,7 @@ from typing import Dict, List, Optional, Any, Callable, Type
 from collections import defaultdict
 from dataclasses import dataclass, asdict
 from sensor_collector import get_sensor_collector, SensorCollector
+from database_manager import get_database_manager
 from data_processing import (
     ProcessingResult, MovingAverageFilter, KalmanFilter, 
     OutlierDetector, TrendAnalyzer, StatisticalAnalyzer, 
@@ -40,18 +41,25 @@ class ProcessingPipeline:
 class AlgorithmManager:
     """算法管理器"""
     
-    def __init__(self):
+    def __init__(self, enable_database: bool = True):
         self.algorithms: Dict[str, Any] = {}
         self.algorithm_configs: Dict[str, AlgorithmConfig] = {}
         self.pipelines: Dict[str, ProcessingPipeline] = {}
         self.results_cache: Dict[str, List[ProcessingResult]] = defaultdict(list)
         self.sensor_collector: Optional[SensorCollector] = None
-        self.running = False
+        self.running: bool = False
+        self.enable_database: bool = enable_database
+        
+        # 初始化数据库管理器
+        if self.enable_database:
+            self.db_manager = get_database_manager()
+        else:
+            self.db_manager = None
         
         # 注册内置算法
         self._register_builtin_algorithms()
         
-        logger.info("算法管理器初始化完成")
+        logger.info(f"算法管理器初始化完成 (数据库: {'启用' if enable_database else '禁用'})")
     
     def _register_builtin_algorithms(self):
         """注册内置算法"""
@@ -164,6 +172,23 @@ class AlgorithmManager:
                 if len(self.results_cache[algorithm_name]) > 1000:
                     self.results_cache[algorithm_name].pop(0)
                 
+                # 存储到数据库（如果启用）
+                if self.db_manager:
+                    try:
+                        timestamp = kwargs.get('timestamp', time.time())
+                        self.db_manager.store_algorithm_result(
+                            timestamp=timestamp,
+                            algorithm_name=algorithm_name,
+                            module=kwargs.get('module', 'unknown'),
+                            data_field=kwargs.get('data_field', 'value'),
+                            original_value=value,
+                            processed_value=result.processed_value,
+                            confidence=result.confidence,
+                            metadata=result.metadata or {}
+                        )
+                    except Exception as e:
+                        logger.error(f"存储算法结果到数据库失败: {e}")
+                
                 return result
             else:
                 logger.error(f"算法 {algorithm_name} 没有process方法")
@@ -199,6 +224,22 @@ class AlgorithmManager:
                     result = self.process_data(algo_name, float(value), timestamp=time.time())
                     if result:
                         field_results[algo_name] = result
+                        
+                        # 存储到数据库（带模块和字段信息）
+                        if self.db_manager:
+                            try:
+                                self.db_manager.store_algorithm_result(
+                                    timestamp=time.time(),
+                                    algorithm_name=algo_name,
+                                    module=module,
+                                    data_field=key,
+                                    original_value=float(value),
+                                    processed_value=result.processed_value,
+                                    confidence=result.confidence,
+                                    metadata=result.metadata or {}
+                                )
+                            except Exception as e:
+                                logger.error(f"存储管道算法结果到数据库失败: {e}")
                 
                 if field_results:
                     results[key] = field_results
@@ -249,6 +290,7 @@ class AlgorithmManager:
             'enabled_algorithms': sum(1 for config in self.algorithm_configs.values() if config.enabled),
             'total_pipelines': len(self.pipelines),
             'enabled_pipelines': sum(1 for pipeline in self.pipelines.values() if pipeline.enabled),
+            'database_enabled': self.enable_database,
             'algorithms': {}
         }
         
@@ -259,6 +301,15 @@ class AlgorithmManager:
                 'priority': config.priority,
                 'results_count': len(self.results_cache.get(name, []))
             }
+        
+        # 添加数据库信息
+        if self.db_manager:
+            try:
+                db_info = self.db_manager.get_database_info()
+                status['database_info'] = db_info
+            except Exception as e:
+                logger.error(f"获取数据库信息失败: {e}")
+                status['database_info'] = {'error': str(e)}
         
         return status
     

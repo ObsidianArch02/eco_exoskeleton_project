@@ -17,6 +17,7 @@ from config import (
     MQTT_BROKER, MQTT_PORT, MQTT_USER, MQTT_PASS,
     TOPIC_GREENHOUSE_SENSORS, TOPIC_INJECTION_SENSORS, TOPIC_BUBBLE_SENSORS
 )
+from database_manager import get_database_manager
 
 logger = logging.getLogger(__name__)
 
@@ -73,12 +74,19 @@ class SensorDataBuffer:
 class SensorCollector:
     """传感器数据收集器"""
     
-    def __init__(self, buffer_size: int = 1000):
+    def __init__(self, buffer_size: int = 1000, enable_database: bool = True):
         self.buffer = SensorDataBuffer(buffer_size)
         self.client = mqtt.Client(client_id="sensor_collector")
         self.connected = False
         self.data_callbacks: List[Callable[[str, dict], None]] = []
         self.running = False
+        self.enable_database = enable_database
+        
+        # 初始化数据库管理器
+        if self.enable_database:
+            self.db_manager = get_database_manager()
+        else:
+            self.db_manager = None
         
         # MQTT事件回调
         self.client.on_connect = self._on_connect
@@ -88,7 +96,7 @@ class SensorCollector:
         # 设置认证
         self.client.username_pw_set(MQTT_USER, MQTT_PASS)
         
-        logger.info("传感器数据收集器初始化完成")
+        logger.info(f"传感器数据收集器初始化完成 (数据库: {'启用' if enable_database else '禁用'})")
     
     def add_data_callback(self, callback: Callable[[str, dict], None]):
         """添加数据回调函数"""
@@ -166,6 +174,13 @@ class SensorCollector:
             # 存储到缓冲区
             self.buffer.add_sensor_data(module, payload, timestamp)
             
+            # 存储到数据库
+            if self.db_manager:
+                try:
+                    self.db_manager.store_sensor_data(module, payload, timestamp)
+                except Exception as e:
+                    logger.error(f"存储传感器数据到数据库失败: {e}")
+            
             # 调用所有注册的回调函数
             for callback in self.data_callbacks:
                 try:
@@ -204,13 +219,25 @@ class SensorCollector:
     def get_buffer_status(self) -> Dict[str, Any]:
         """获取缓冲区状态信息"""
         with self.buffer.lock:
-            return {
+            status = {
                 'total_entries': len(self.buffer.data_buffer),
                 'module_entries': {module: len(buf) for module, buf in self.buffer.module_buffers.items()},
                 'buffer_size': self.buffer.max_size,
                 'connected': self.connected,
-                'running': self.running
+                'running': self.running,
+                'database_enabled': self.enable_database
             }
+            
+            # 添加数据库信息
+            if self.db_manager:
+                try:
+                    db_info = self.db_manager.get_database_info()
+                    status['database_info'] = db_info
+                except Exception as e:
+                    logger.error(f"获取数据库信息失败: {e}")
+                    status['database_info'] = {'error': str(e)}
+            
+            return status
 
 # 全局传感器收集器实例
 _sensor_collector = None
