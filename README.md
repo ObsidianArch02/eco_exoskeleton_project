@@ -104,7 +104,7 @@ graph LR
 
 ## System Components
 
-### 1. Central Control System (根目录)
+### 1. Central Control System
 
 #### Core Modules
 
