@@ -59,8 +59,6 @@ graph TB
     BM --> ENV
 ```
 
-![](img/Mermaid-2025-07-16-160443.svg)
-
 ### Module Hierarchy and Dependencies
 
 ```mermaid
@@ -103,8 +101,6 @@ graph LR
     MQTT <--> ESP32_IM
     MQTT <--> ESP32_BM
 ```
-
-![](img/Mermaid-2025-07-16-160719.svg)
 
 ## System Components
 
@@ -178,7 +174,6 @@ sequenceDiagram
     DS->>CLI: Display Status
 ```
 
-![](img/Mermaid-2025-07-16-160845.svg)
 
 ### Sensor Data Processing Flow
 
@@ -198,7 +193,6 @@ flowchart TD
     L --> M[Update System State]
 ```
 
-![](img/Mermaid-2025-07-16-160936.svg)
 
 ## Installation and Setup
 
@@ -405,33 +399,3 @@ idf.py -p /dev/ttyUSB0 monitor
 ---
 
 **Note**: This system is designed for research and development purposes. Ensure proper safety measures when deploying in real-world environments.
-
-
-## 📁 当前项目结构
-
-```
-eco-exoskeleton-system/
-├── 📄 main.py                    # 系统入口点
-├── 📄 system_controller.py       # 系统控制器
-├── 📄 decision_system.py         # 决策系统
-├── 📄 mqtt_manager.py            # MQTT通信管理
-├── 📄 cli.py                     # 命令行接口
-├── 📄 models.py                  # 数据模型
-├── 📄 config.py                  # 配置文件
-├── 📄 log_manager.py             # 日志管理器
-├── 📄 test_sensor_generator.py   # 测试传感器数据生成器
-├── 📄 pyproject.toml             # 项目配置
-├── 📄 README.md                  # 项目说明文档
-├── 📄 README-Eco-Exoskeleton-System.md  # 系统架构文档
-├── 📁 esp32_firmware/            # ESP32固件模块
-│   ├── 📄 CMakeLists.txt
-│   ├── 📄 build.sh
-│   ├── 📄 mqtt_helper.cpp/h
-│   ├── 📄 debug_helper.cpp/h
-│   ├── 📄 greenhouse_module.c
-│   ├── 📄 injection_module.c
-│   ├── 📄 bubble_machine_module.c
-│   └── 📄 sensor_*.h
-├── 📁 img/                       # 文档图片
-└── 📁 logs/                      # 日志文件目录
-```
