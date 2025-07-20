@@ -9,7 +9,7 @@ import time
 import random
 import json
 from datetime import datetime, timedelta
-from database_manager import get_database_manager
+from eco_exoskeleton.database_manager import get_database_manager
 
 def generate_sensor_data():
     """生成模拟传感器数据"""

@@ -1,6 +1,6 @@
 import time
-from system_controller import EcologicalExoskeletonSystem
-from models import ModuleState
+from eco_exoskeleton.system_controller import EcologicalExoskeletonSystem
+from eco_exoskeleton.models import ModuleState
 
 class SystemCLI:
     def __init__(self, system: EcologicalExoskeletonSystem):
@@ -268,7 +268,7 @@ class SystemCLI:
         print("=" * 60)
         
         try:
-            from database_manager import get_database_manager
+            from eco_exoskeleton.database_manager import get_database_manager
             db_manager = get_database_manager()
             info = db_manager.get_database_info()
             
@@ -300,7 +300,7 @@ class SystemCLI:
         print("=" * 60)
         
         try:
-            from database_manager import get_database_manager
+            from eco_exoskeleton.database_manager import get_database_manager
             db_manager = get_database_manager()
             stats = db_manager.get_statistics(24)
             
@@ -369,7 +369,7 @@ class SystemCLI:
                 print("❌ 清理操作已取消")
                 return
             
-            from database_manager import get_database_manager
+            from eco_exoskeleton.database_manager import get_database_manager
             db_manager = get_database_manager()
             
             print("🔄 正在清理数据库...")

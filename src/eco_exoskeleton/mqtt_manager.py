@@ -1,8 +1,8 @@
 import json
 import logging
 import paho.mqtt.client as mqtt
-from models import SensorData, ModuleStatus, Command, ModuleState
-from config import *
+from eco_exoskeleton.models import SensorData, ModuleStatus, Command, ModuleState
+from eco_exoskeleton.config import *
 
 logger = logging.getLogger(__name__)
 

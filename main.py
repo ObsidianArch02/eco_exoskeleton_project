@@ -1,7 +1,7 @@
 import sys
-from system_controller import EcologicalExoskeletonSystem
-from cli import SystemCLI
-from log_manager import setup_logging
+from eco_exoskeleton.system_controller import EcologicalExoskeletonSystem
+from eco_exoskeleton.cli import SystemCLI
+from eco_exoskeleton.log_manager import setup_logging
 import logging
 
 def main():

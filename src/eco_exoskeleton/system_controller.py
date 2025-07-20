@@ -1,12 +1,12 @@
 import threading
 import time
 import logging
-from decision_system import CentralDecisionSystem
-from mqtt_manager import MQTTManager
-from sensor_collector import get_sensor_collector
-from algorithm_manager import get_algorithm_manager
-from models import Command
-from config import CONTROL_LOOP_FREQ
+from eco_exoskeleton.decision_system import CentralDecisionSystem
+from eco_exoskeleton.mqtt_manager import MQTTManager
+from eco_exoskeleton.sensor_collector import get_sensor_collector
+from eco_exoskeleton.algorithm_manager import get_algorithm_manager
+from eco_exoskeleton.models import Command
+from eco_exoskeleton.config import CONTROL_LOOP_FREQ
 
 """Ecological Exoskeleton System Controller
 This module manages the overall system, including decision making,
@@ -69,7 +69,7 @@ class EcologicalExoskeletonSystem:
     
     def _setup_default_pipelines(self):
         """设置默认的数据处理管道"""
-        from algorithm_manager import ProcessingPipeline
+        from eco_exoskeleton.algorithm_manager import ProcessingPipeline
         
         # 创建温度数据处理管道
         temp_pipeline = ProcessingPipeline(

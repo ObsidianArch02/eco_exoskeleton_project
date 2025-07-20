@@ -13,11 +13,11 @@ import threading
 from collections import deque, defaultdict
 from typing import Dict, List, Optional, Callable, Any
 import paho.mqtt.client as mqtt
-from config import (
+from eco_exoskeleton.config import (
     MQTT_BROKER, MQTT_PORT, MQTT_USER, MQTT_PASS,
     TOPIC_GREENHOUSE_SENSORS, TOPIC_INJECTION_SENSORS, TOPIC_BUBBLE_SENSORS
 )
-from database_manager import get_database_manager
+from eco_exoskeleton.database_manager import get_database_manager
 
 logger = logging.getLogger(__name__)
 

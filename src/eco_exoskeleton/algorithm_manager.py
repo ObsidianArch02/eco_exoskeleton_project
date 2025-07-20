@@ -11,9 +11,9 @@ import logging
 from typing import Dict, List, Optional, Any, Callable, Type
 from collections import defaultdict
 from dataclasses import dataclass, asdict
-from sensor_collector import get_sensor_collector, SensorCollector
-from database_manager import get_database_manager
-from data_processing import (
+from eco_exoskeleton.sensor_collector import get_sensor_collector, SensorCollector
+from eco_exoskeleton.database_manager import get_database_manager
+from eco_exoskeleton.data_processing import (
     ProcessingResult, MovingAverageFilter, KalmanFilter, 
     OutlierDetector, TrendAnalyzer, StatisticalAnalyzer, 
     DataFusionProcessor, AdaptiveFilter

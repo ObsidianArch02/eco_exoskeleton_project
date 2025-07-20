@@ -9,13 +9,12 @@ import time
 import random
 import math
 from typing import List, Tuple
-from data_processing import (
-    MovingAverageFilter, KalmanFilter, OutlierDetector, 
-    TrendAnalyzer, StatisticalAnalyzer, DataFusionProcessor, AdaptiveFilter
+from eco_exoskeleton.data_processing import (
+    ProcessingResult, MovingAverageFilter, KalmanFilter, OutlierDetector, TrendAnalyzer, StatisticalAnalyzer, DataFusionProcessor, AdaptiveFilter
 )
-from algorithm_manager import get_algorithm_manager, AlgorithmConfig, ProcessingPipeline
-from sensor_collector import get_sensor_collector
-from log_manager import setup_logging
+from eco_exoskeleton.algorithm_manager import get_algorithm_manager, AlgorithmConfig, ProcessingPipeline
+from eco_exoskeleton.sensor_collector import get_sensor_collector
+from eco_exoskeleton.log_manager import setup_logging
 
 def generate_test_data(length: int = 100) -> List[Tuple[float, float]]:
     """生成测试数据 (时间戳, 数值)"""

@@ -8,9 +8,9 @@ for testing purposes. Run this script standalone to simulate sensor input.
 import time
 import random
 from dataclasses import fields
-from decision_system import CentralDecisionSystem
-from models import SensorData
-from log_manager import setup_logging
+from eco_exoskeleton.decision_system import CentralDecisionSystem
+from eco_exoskeleton.models import SensorData
+from eco_exoskeleton.log_manager import setup_logging
 
 def generate_random_sensor_data() -> SensorData:
     """Generate random sensor data for testing."""
